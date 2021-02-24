@@ -35,6 +35,9 @@ from .util import ReposOrAliasArgument, sigil_int, quote_parser, UrlOrAliasArgum
 
 from pprint import pprint
 
+import json
+import hmac
+
 
 class GiteaBot(Plugin):
     task_list: List[Task]
@@ -113,10 +116,16 @@ class GiteaBot(Plugin):
 
         try:
             msg = None
-            body = await req.json()
 
-            if body["secret"] != self.config["webhook-secret"]:
-                self.log.error("Failed to handle Gitea event: secret doesnt match.")
+            raw = await req.content.read()  # We need the raw bytes
+            charset = req.charset or 'utf-8'
+            body = json.loads(raw.decode(encoding=charset))
+
+            signature = req.headers['X-Gitea-Signature']
+            payload_signature = hmac.new(self.config["webhook-secret"].encode('utf-8'), raw, digestmod="sha256")
+
+            if not hmac.compare_digest(signature, payload_signature.hexdigest()):
+                self.log.error("Failed to handle Gitea event: Could not verify signature.")
             else:
                 event = req.headers["X-Gitea-Event"]
                 if event == 'push':
