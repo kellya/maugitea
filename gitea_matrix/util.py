@@ -62,6 +62,11 @@ Decorator = Callable[['GiteaBot', MessageEvent, AuthInfo, Any], Any]
 
 def with_gitea_session(func: Decoratable) -> Decorator:
     async def wrapper(self, evt: MessageEvent, url: str, **kwargs) -> Any:
+
+        if url == "":
+            await evt.reply("You forgot the server url/alias!")
+            return wrapper
+
         try:
             aInfo = self.db.get_login(evt.sender, url)
             gtc = giteapy.Configuration()
