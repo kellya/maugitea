@@ -60,8 +60,25 @@ class ReposOrAliasArgument(Argument):
 Decoratable = Callable[['GiteaBot', MessageEvent, Gtc, Any], Any]
 Decorator = Callable[['GiteaBot', MessageEvent, AuthInfo, Any], Any]
 
+
+async def verify_token(url: str, token: str):
+    gtc = giteapy.Configuration()
+    gtc.host = url
+    gtc.api_key['access_token'] = token
+
+    api_instance = giteapy.UserApi(giteapy.ApiClient(gtc))
+    api_response = api_instance.user_get_current()
+
+    return api_response.login
+
+
 def with_gitea_session(func: Decoratable) -> Decorator:
     async def wrapper(self, evt: MessageEvent, url: str, **kwargs) -> Any:
+
+        if url == "":
+            await evt.reply("You forgot the server url/alias!")
+            return wrapper
+
         try:
             aInfo = self.db.get_login(evt.sender, url)
             gtc = giteapy.Configuration()
