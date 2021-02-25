@@ -23,6 +23,8 @@ from maubot.handlers.command import Argument
 
 from .db import AuthInfo
 
+from sqlalchemy.orm.exc import NoResultFound
+
 from pprint import pprint
 
 class UrlOrAliasArgument(Argument):
@@ -68,6 +70,10 @@ def with_gitea_session(func: Decoratable) -> Decorator:
             return await func(self, evt, gtc=gtc, **kwargs)
         except ApiException as e:
             await evt.reply("Api Error.\n\n{0}".format(e))
+        except NoResultFound:
+            await evt.reply("Could not find a login token for {0}! "
+                            "Please login (in a private chat!) with "
+                            "`!gitea server login {0} <YOUR-AUTH-TOKEN>`".format(url))
         except Exception as e:
             self.log.error("Failed to handle command", exc_info=True)
             await evt.reply("Error.\n\n{0}".format(e))

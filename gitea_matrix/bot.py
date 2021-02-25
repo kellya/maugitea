@@ -33,6 +33,8 @@ from .db import Database
 from .config import Config
 from .util import ReposOrAliasArgument, sigil_int, quote_parser, UrlOrAliasArgument, with_gitea_session
 
+from sqlalchemy.orm.exc import NoResultFound
+
 from pprint import pprint
 
 import json
@@ -217,8 +219,11 @@ class GiteaBot(Plugin):
                       help="Remove a alias to a Gitea server.")
     @command.argument("alias", "server alias")
     async def alias_rm(self, evt: MessageEvent, alias: str) -> None:
-        self.db.rm_server_alias(evt.sender, alias)
-        await evt.reply(f"Removed alias {alias}.")
+        try:
+            self.db.rm_server_alias(evt.sender, alias)
+            await evt.reply(f"Removed alias {alias}.")
+        except NoResultFound:
+            await evt.reply(f"Alias {alias} not found!")
 
     # endregion
 
@@ -286,8 +291,11 @@ class GiteaBot(Plugin):
                       help="Remove a alias to a Gitea repository.")
     @command.argument("alias", "repository alias")
     async def ralias_rm(self, evt: MessageEvent, alias: str) -> None:
-        self.db.rm_repos_alias(evt.sender, alias)
-        await evt.reply(f"Removed alias {alias}.")
+        try:
+            self.db.rm_repos_alias(evt.sender, alias)
+            await evt.reply(f"Removed alias {alias}.")
+        except NoResultFound:
+            await evt.reply(f"Alias {alias} not found.")
 
     # endregion
 
