@@ -15,6 +15,9 @@
 
 from mautrix.util.config import BaseProxyConfig, ConfigUpdateHelper
 
+
 class Config(BaseProxyConfig):
     def do_update(self, helper: ConfigUpdateHelper) -> None:
-        pass
+        helper.copy('webhook-secret')
+        helper.copy('send_as_notice')
+        helper.copy('time_format')
