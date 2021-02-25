@@ -23,6 +23,7 @@ from yarl import URL
 
 from . import giteapy as giteapy
 from .giteapy import Configuration as Gtc
+from .giteapy.rest import ApiException
 
 from maubot import Plugin, MessageEvent
 from maubot.handlers import command, event, web
@@ -31,7 +32,7 @@ from mautrix.util.config import BaseProxyConfig
 
 from .db import Database
 from .config import Config
-from .util import ReposOrAliasArgument, sigil_int, quote_parser, UrlOrAliasArgument, with_gitea_session
+from .util import ReposOrAliasArgument, sigil_int, quote_parser, UrlOrAliasArgument, with_gitea_session, verify_token
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -238,9 +239,12 @@ class GiteaBot(Plugin):
     @UrlOrAliasArgument("url", "server URL or alias")
     @command.argument("token", "access token", pass_raw=True)
     async def server_login(self, evt: MessageEvent, url: str, token: str) -> None:
-        # TODO verify the token
-        self.db.add_login(evt.sender, url, token)
-        await evt.reply(f"Added token for {url}.")
+        try:
+            user = await verify_token(url, token)
+            self.db.add_login(evt.sender, url, token)
+            await evt.reply(f"Successfully logged in as {user} at {url}.")
+        except ApiException as e:
+            await evt.reply(f"**Login failed!** \n\nException: {e}")
 
     @server.subcommand("logout", aliases=("rm",),
                        help="Remove the access token from the bot's database.")
