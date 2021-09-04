@@ -385,8 +385,10 @@ class GiteaBot(Plugin):
             msg += "\n".join(f"> {line}" for line in issue.body.strip().split("\n"))
         except ApiException as error:
             msg = (
-                "There was an error accessing the API "
-                "Check your server and repo for errors"
+                "**There was an error accessing the API** "
+                "Check your server URL and repo name for errors\n\n"
+                "Your server should follow a pattern like `https://git.server.com/api/v1`"
+                "\n\nYour repo should look like `user/repo` _(do not follow with .git)_"
             )
 
         await evt.reply(msg)
