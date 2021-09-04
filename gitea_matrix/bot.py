@@ -315,18 +315,24 @@ class GiteaBot(Plugin):
     @command.argument("id", "issue ID", parser=sigil_int)
     @with_gitea_session
     async def issue_read(self, evt: MessageEvent, repo: str, id: int, gtc: Gtc) -> None:
-        api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
-        rep = repo.split("/", 1)
-        issue = api_instance.issue_get_issue(rep[0], rep[1], id)
+        try:
+            api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
+            rep = repo.split("/", 1)
+            issue = api_instance.issue_get_issue(rep[0], rep[1], id)
 
-        msg = f"Issue #{issue.id} by {issue.user.login}: [{issue.title}]({issue.html_url})  \n"
-        if issue.assignees:
-            names = [assignee.login for assignee in issue.assignees]
-            if len(names) > 1:
-                msg += f"Assigned to {', '.join(names[:-1])} and {names[-1]}.  \n"
-            elif len(names) == 1:
-                msg += f"Assigned to {names[0]}.  \n"
-        msg += "\n".join(f"> {line}" for line in issue.body.strip().split("\n"))
+            msg = f"Issue #{issue.id} by {issue.user.login}: [{issue.title}]({issue.html_url})  \n"
+            if issue.assignees:
+                names = [assignee.login for assignee in issue.assignees]
+                if len(names) > 1:
+                    msg += f"Assigned to {', '.join(names[:-1])} and {names[-1]}.  \n"
+                elif len(names) == 1:
+                    msg += f"Assigned to {names[0]}.  \n"
+            msg += "\n".join(f"> {line}" for line in issue.body.strip().split("\n"))
+        except ApiException as error:
+            msg = (
+                "There was an error accessing the API "
+                "Check your server and repo for errors"
+            )
 
         await evt.reply(msg)
 
