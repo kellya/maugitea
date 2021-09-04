@@ -32,7 +32,14 @@ from mautrix.util.config import BaseProxyConfig
 
 from .db import Database
 from .config import Config
-from .util import ReposOrAliasArgument, sigil_int, quote_parser, UrlOrAliasArgument, with_gitea_session, verify_token
+from .util import (
+    ReposOrAliasArgument,
+    sigil_int,
+    quote_parser,
+    UrlOrAliasArgument,
+    with_gitea_session,
+    verify_token,
+)
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -72,40 +79,54 @@ class GiteaBot(Plugin):
 
         if evt.content.membership in (Membership.LEAVE, Membership.BAN):
             self.joined_rooms.remove(evt.room_id)
-        if evt.content.membership == Membership.JOIN and evt.state_key == self.client.mxid:
+        if (
+            evt.content.membership == Membership.JOIN
+            and evt.state_key == self.client.mxid
+        ):
             self.joined_rooms.add(evt.room_id)
-
 
     # region Webhook handling
 
     @web.post("/webhook/r0")
     async def post_handler(self, request: Request) -> Response:
         if "X-Gitea-Event" not in request.headers:
-            return Response(text="400: Bad request\n"
-                                 "Event type not specified\n", status=400)
+            return Response(
+                text="400: Bad request\n" "Event type not specified\n", status=400
+            )
         if "X-Gitea-Delivery" not in request.headers:
-            return Response(text="400: Bad request\n"
-                                 "Missing delivery token header\n", status=401)
+            return Response(
+                text="400: Bad request\n" "Missing delivery token header\n", status=401
+            )
         if "X-Gitea-Signature" not in request.headers:
-            return Response(text="400: Ba request\n"
-                                 "Missing signature header\n", status=401)
+            return Response(
+                text="400: Ba request\n" "Missing signature header\n", status=401
+            )
 
         if "room" not in request.query:
-            return Response(text="400: Bad request\n"
-                                 "No room specified. Did you forget the '?room=' query parameter?\n",
-                            status=400)
+            return Response(
+                text="400: Bad request\n"
+                "No room specified. Did you forget the '?room=' query parameter?\n",
+                status=400,
+            )
 
         if request.query["room"] not in self.joined_rooms:
-            return Response(text="403: Forbidden\nThe bot is not in the room. "
-                                 f"Please invite the bot to the room.\n", status=403)
+            return Response(
+                text="403: Forbidden\nThe bot is not in the room. "
+                f"Please invite the bot to the room.\n",
+                status=403,
+            )
 
         if request.headers.getone("Content-Type", "") != "application/json":
-            return Response(status=406, text="406: Not Acceptable\n",
-                            headers={"Accept": "application/json"})
+            return Response(
+                status=406,
+                text="406: Not Acceptable\n",
+                headers={"Accept": "application/json"},
+            )
 
         if not request.can_read_body:
-            return Response(status=400, text="400: Bad request\n"
-                                             "Missing request body\n")
+            return Response(
+                status=400, text="400: Bad request\n" "Missing request body\n"
+            )
 
         task = self.loop.create_task(self.process_hook_01(request))
         self.task_list += [task]
@@ -121,42 +142,58 @@ class GiteaBot(Plugin):
             msg = None
 
             raw = await req.content.read()  # We need the raw bytes
-            charset = req.charset or 'utf-8'
+            charset = req.charset or "utf-8"
             body = json.loads(raw.decode(encoding=charset))
 
-            signature = req.headers['X-Gitea-Signature']
-            payload_signature = hmac.new(self.config["webhook-secret"].encode('utf-8'), raw, digestmod="sha256")
+            signature = req.headers["X-Gitea-Signature"]
+            payload_signature = hmac.new(
+                self.config["webhook-secret"].encode("utf-8"), raw, digestmod="sha256"
+            )
 
             if not hmac.compare_digest(signature, payload_signature.hexdigest()):
-                self.log.error("Failed to handle Gitea event: Could not verify signature.")
+                self.log.error(
+                    "Failed to handle Gitea event: Could not verify signature."
+                )
             else:
                 event = req.headers["X-Gitea-Event"]
-                if event == 'push':
+                if event == "push":
                     commits = body["commits"]
                     commit_count = len(commits)
                     if commit_count > 0:
-                        msg = (f"user '{body['sender']['login']}' pushed "
-                               f"{commit_count} commit(s) to "
-                               f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
-                elif event == 'create':
-                    msg = (f"user '{body['sender']['login']}' created a tag or branch in "
-                           f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
-                elif event == 'delete':
-                    msg = (f"user '{body['sender']['login']}' deleted a tag or branch in "
-                           f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
-                elif event == 'issues':
-                    msg = (f"user '{body['sender']['login']}' {body['action']} issue #{body['number']} in "
-                           f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
-                elif event == 'issue_comment':
-                    msg = (f"user '{body['sender']['login']}' {body['action']} a comment on issue #{body['issue']['id']} in "
-                           f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'.")
+                        msg = (
+                            f"user '{body['sender']['login']}' pushed "
+                            f"{commit_count} commit(s) to "
+                            f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'."
+                        )
+                elif event == "create":
+                    msg = (
+                        f"user '{body['sender']['login']}' created a tag or branch in "
+                        f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'."
+                    )
+                elif event == "delete":
+                    msg = (
+                        f"user '{body['sender']['login']}' deleted a tag or branch in "
+                        f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'."
+                    )
+                elif event == "issues":
+                    msg = (
+                        f"user '{body['sender']['login']}' {body['action']} issue #{body['number']} in "
+                        f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'."
+                    )
+                elif event == "issue_comment":
+                    msg = (
+                        f"user '{body['sender']['login']}' {body['action']} a comment on issue #{body['issue']['id']} in "
+                        f"'{body['repository']['full_name']}' at '{URL(body['repository']['html_url']).host}'."
+                    )
                 else:
                     self.log.error(f"unhandled hook: {event}")
                     self.log.error(await req.text())
 
                 room_id = RoomID(req.query["room"])
                 if msg:
-                    event_id = await self.client.send_markdown(room_id, msg, allow_html=True, msgtype=msgtype)
+                    event_id = await self.client.send_markdown(
+                        room_id, msg, allow_html=True, msgtype=msgtype
+                    )
 
         except Exception:
             self.log.error("Failed to handle Gitea event", exc_info=True)
@@ -167,8 +204,7 @@ class GiteaBot(Plugin):
 
     # endregion
 
-    @command.new(name="gitea", help="Manage this Gitea bot",
-                  require_subcommand=True)
+    @command.new(name="gitea", help="Manage this Gitea bot", require_subcommand=True)
     async def gitea(self) -> None:
         pass
 
@@ -184,15 +220,15 @@ class GiteaBot(Plugin):
     async def whoami(self, evt: MessageEvent, gtc: Gtc) -> None:
         api_instance = giteapy.UserApi(giteapy.ApiClient(gtc))
         api_response = api_instance.user_get_current()
-        await evt.reply(f"You're logged into {URL(gtc.host).host} as "
-                        f"{api_response.login}")
+        await evt.reply(
+            f"You're logged into {URL(gtc.host).host} as " f"{api_response.login}"
+        )
 
     # endregion
 
     # region !gitea server alias
 
-    @gitea.subcommand("alias", aliases=("a",),
-                       help="Manage Gitea server aliases.")
+    @gitea.subcommand("alias", aliases=("a",), help="Manage Gitea server aliases.")
     async def alias(self) -> None:
         pass
 
@@ -206,18 +242,24 @@ class GiteaBot(Plugin):
         self.db.add_server_alias(evt.sender, url, alias)
         await evt.reply(f"Added alias {alias} to server {url}")
 
-    @alias.subcommand("list", aliases=("l", "ls"), help="Show your Gitea server aliases.")
+    @alias.subcommand(
+        "list", aliases=("l", "ls"), help="Show your Gitea server aliases."
+    )
     async def alias_list(self, evt: MessageEvent) -> None:
         aliases = self.db.get_server_aliases(evt.sender)
         if not aliases:
             await evt.reply("You don't have any server aliases.")
             return
-        msg = ("You have the following server aliases:\n\n"
-               + "\n".join(f"+ {alias.alias} → {alias.server}" for alias in aliases))
+        msg = "You have the following server aliases:\n\n" + "\n".join(
+            f"+ {alias.alias} → {alias.server}" for alias in aliases
+        )
         await evt.reply(msg)
 
-    @alias.subcommand("remove", aliases=("r", "rm", "d", "del", "delete"),
-                      help="Remove a alias to a Gitea server.")
+    @alias.subcommand(
+        "remove",
+        aliases=("r", "rm", "d", "del", "delete"),
+        help="Remove a alias to a Gitea server.",
+    )
     @command.argument("alias", "server alias")
     async def alias_rm(self, evt: MessageEvent, alias: str) -> None:
         try:
@@ -240,11 +282,14 @@ class GiteaBot(Plugin):
         if not servers:
             await evt.reply("You are not logged in to any server.")
             return
-        await evt.reply("You are logged in to the following servers:\n\n"
-                        + "\n".join(f"* {server}" for server in servers))
+        await evt.reply(
+            "You are logged in to the following servers:\n\n"
+            + "\n".join(f"* {server}" for server in servers)
+        )
 
-    @server.subcommand("login", aliases=("l",),
-                       help="Add a Gitea access token for a Gitea server.")
+    @server.subcommand(
+        "login", aliases=("l",), help="Add a Gitea access token for a Gitea server."
+    )
     @UrlOrAliasArgument("url", "server URL or alias")
     @command.argument("token", "access token", pass_raw=True)
     async def server_login(self, evt: MessageEvent, url: str, token: str) -> None:
@@ -255,8 +300,11 @@ class GiteaBot(Plugin):
         except ApiException as e:
             await evt.reply(f"**Login failed!** \n\nException: {e}")
 
-    @server.subcommand("logout", aliases=("rm",),
-                       help="Remove the access token from the bot's database.")
+    @server.subcommand(
+        "logout",
+        aliases=("rm",),
+        help="Remove the access token from the bot's database.",
+    )
     @UrlOrAliasArgument("url", "server URL or alias")
     async def server_logout(self, evt: MessageEvent, url: str) -> None:
         self.db.rm_login(evt.sender, url)
@@ -266,12 +314,13 @@ class GiteaBot(Plugin):
 
     # region !gitea repository alias
 
-    @gitea.subcommand("ralias", aliases=("r",),
-                       help="Manage Gitea repository aliases.")
+    @gitea.subcommand("ralias", aliases=("r",), help="Manage Gitea repository aliases.")
     async def ralias(self) -> None:
         pass
 
-    @ralias.subcommand("add", aliases=("a",), help="Add an alias to a Gitea repository.")
+    @ralias.subcommand(
+        "add", aliases=("a",), help="Add an alias to a Gitea repository."
+    )
     @command.argument("alias", "repository alias")
     @command.argument("repos", "repository")
     async def ralias_add(self, evt: MessageEvent, repos: str, alias: str) -> None:
@@ -281,18 +330,24 @@ class GiteaBot(Plugin):
         self.db.add_repos_alias(evt.sender, repos, alias)
         await evt.reply(f"Added alias {alias} to repository {repos}")
 
-    @ralias.subcommand("list", aliases=("l", "ls"), help="Show your Gitea repository aliases.")
+    @ralias.subcommand(
+        "list", aliases=("l", "ls"), help="Show your Gitea repository aliases."
+    )
     async def ralias_list(self, evt: MessageEvent) -> None:
         aliases = self.db.get_repos_aliases(evt.sender)
         if not aliases:
             await evt.reply("You don't have any repository aliases.")
             return
-        msg = ("You have the following repository aliases:\n\n"
-               + "\n".join(f"+ {alias.alias} → {alias.server}" for alias in aliases))
+        msg = "You have the following repository aliases:\n\n" + "\n".join(
+            f"+ {alias.alias} → {alias.server}" for alias in aliases
+        )
         await evt.reply(msg)
 
-    @ralias.subcommand("remove", aliases=("r", "rm", "d", "del", "delete"),
-                      help="Remove a alias to a Gitea repository.")
+    @ralias.subcommand(
+        "remove",
+        aliases=("r", "rm", "d", "del", "delete"),
+        help="Remove a alias to a Gitea repository.",
+    )
     @command.argument("alias", "repository alias")
     async def ralias_rm(self, evt: MessageEvent, alias: str) -> None:
         try:
@@ -336,15 +391,23 @@ class GiteaBot(Plugin):
 
         await evt.reply(msg)
 
-    @issue.subcommand("create", help="Create an Issue. The issue body can be placed on a new line.")
+    @issue.subcommand(
+        "create", help="Create an Issue. The issue body can be placed on a new line."
+    )
     @UrlOrAliasArgument("url", "server URL or alias")
     @ReposOrAliasArgument("repo", "repository")
     @command.argument("title", "issue title", pass_raw=True, parser=quote_parser)
-    @command.argument("desc", "issue body", pass_raw=True, required=False,
-                      parser=partial(quote_parser, return_all=True))
+    @command.argument(
+        "desc",
+        "issue body",
+        pass_raw=True,
+        required=False,
+        parser=partial(quote_parser, return_all=True),
+    )
     @with_gitea_session
-    async def issue_create(self, evt: MessageEvent, repo: str, title: str,
-                           desc: str, gtc: Gtc) -> None:
+    async def issue_create(
+        self, evt: MessageEvent, repo: str, title: str, desc: str, gtc: Gtc
+    ) -> None:
         api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
         rep = repo.split("/", 1)
 
@@ -358,11 +421,13 @@ class GiteaBot(Plugin):
     @ReposOrAliasArgument("repo", "repository or alias")
     @command.argument("id", "issue ID", parser=sigil_int)
     @with_gitea_session
-    async def issue_close(self, evt: MessageEvent, repo: str, id: str, gtc: Gtc) -> None:
+    async def issue_close(
+        self, evt: MessageEvent, repo: str, id: str, gtc: Gtc
+    ) -> None:
         api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
         rep = repo.split("/", 1)
 
-        body = giteapy.EditIssueOption(state='closed')
+        body = giteapy.EditIssueOption(state="closed")
         issue = api_instance.issue_edit_issue(rep[0], rep[1], id, body=body)
 
         await evt.reply(f"Closed issue [#{issue.id}]({issue.html_url}): {issue.title}")
@@ -372,14 +437,18 @@ class GiteaBot(Plugin):
     @ReposOrAliasArgument("repo", "repository or alias")
     @command.argument("id", "issue ID", parser=sigil_int)
     @with_gitea_session
-    async def issue_reopen(self, evt: MessageEvent, repo: str, id: int, gtc: Gtc) -> None:
+    async def issue_reopen(
+        self, evt: MessageEvent, repo: str, id: int, gtc: Gtc
+    ) -> None:
         api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
         rep = repo.split("/", 1)
 
-        body = giteapy.EditIssueOption(state='open')
+        body = giteapy.EditIssueOption(state="open")
         issue = api_instance.issue_edit_issue(rep[0], rep[1], id, body=body)
 
-        await evt.reply(f"Reopened issue [#{issue.id}]({issue.html_url}): {issue.title}")
+        await evt.reply(
+            f"Reopened issue [#{issue.id}]({issue.html_url}): {issue.title}"
+        )
 
     @issue.subcommand("comment", help="Write a commant on an issue.")
     @UrlOrAliasArgument("url", "server URL or alias")
@@ -387,7 +456,9 @@ class GiteaBot(Plugin):
     @command.argument("id", "issue ID", parser=sigil_int)
     @command.argument("comment", "comment text", pass_raw=True)
     @with_gitea_session
-    async def issue_comment(self, evt: MessageEvent, repo: str, id: int, comment: str, gtc: Gtc) -> None:
+    async def issue_comment(
+        self, evt: MessageEvent, repo: str, id: int, comment: str, gtc: Gtc
+    ) -> None:
         api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
         rep = repo.split("/", 1)
 
@@ -396,13 +467,16 @@ class GiteaBot(Plugin):
 
         await evt.reply(f"Commented on issue [#{issue.id}]({issue.html_url})")
 
-    @issue.subcommand("comments", aliases=("read-comments",),
-                      help="Read comments on an issue.")
+    @issue.subcommand(
+        "comments", aliases=("read-comments",), help="Read comments on an issue."
+    )
     @UrlOrAliasArgument("url", "server URL or alias")
     @ReposOrAliasArgument("repo", "repository or alias")
     @command.argument("id", "issue ID", parser=sigil_int)
     @with_gitea_session
-    async def issue_comments_read(self, evt: MessageEvent, repo: str, id: int, gtc: Gtc) -> None:
+    async def issue_comments_read(
+        self, evt: MessageEvent, repo: str, id: int, gtc: Gtc
+    ) -> None:
         api_instance = giteapy.IssueApi(giteapy.ApiClient(gtc))
         rep = repo.split("/", 1)
 

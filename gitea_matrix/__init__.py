@@ -1,1 +1,1 @@
-from .bot import GiteaBot
+from gitea_matrix.bot import GiteaBot

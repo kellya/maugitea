@@ -1,5 +1,5 @@
 id: de.saces.maugitea
-version: 0.0.1
+version: 0.0.2
 modules:
 - gitea_matrix
 main_class: GiteaBot
@@ -10,5 +10,3 @@ webapp: true
 license: AGPL-3.0-or-later
 extra_files:
 - base-config.yaml
-dependencies: []
-soft_dependencies: []
