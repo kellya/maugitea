@@ -239,8 +239,26 @@ class GiteaBot(Plugin):
         if self.db.has_server_alias(evt.sender, alias):
             await evt.reply("Server alias already in use.")
             return
+        add_message = None
+        if not "/api" in url and self.config["api_endpoint"]:
+            url = url + self.config["api_endpoint"]
+            add_message = (
+                "Note the string '/api' wasn't found in your url "
+                "but is required for operation.  It has been appended "
+                "using the default set in the config file"
+            )
+        elif not "/api" in url and not self.config["api_endpoint"]:
+            url = url + "/api/v1"
+            add_message = (
+                "Note the string '/api' wasn't found in your url "
+                "but is required for operation.  There is also no server "
+                "default set, so '/api/v1' has been appended"
+            )
         self.db.add_server_alias(evt.sender, url, alias)
-        await evt.reply(f"Added alias {alias} to server {url}")
+        message = f"Added alias {alias} to server {url}"
+        if add_message:
+            message += f"\n\n{add_message}"
+        await evt.reply(message)
 
     @alias.subcommand(
         "list", aliases=("l", "ls"), help="Show your Gitea server aliases."

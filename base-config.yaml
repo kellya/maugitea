@@ -1,3 +1,4 @@
 webhook-secret: "sUPERgEHEIM"
 send_as_notice: true
 time_format: "%d.%m.%Y %H:%M:%S %Z"
+api_endpoint: /api/v1
