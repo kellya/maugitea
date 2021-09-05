@@ -10,6 +10,9 @@ Matrix room: #maugitea:saces.de
 
 maugitea: just a regular plugin, zip it and upload it.
 
+If you have maubot installed, you can create the mbp package with:
+`mbc build`
+
 === Webhooks
 
 url: https://fancy.domain/_matrix/maubot/plugin/<instance_name>/webhook/r0?room=<room-id>
@@ -34,7 +37,7 @@ Ping the bot
 
 ==== Server Alias
 
-Note: the url have to be complete for the endpoint, something like 'https://your.git.ea/api/v1' 
+Note: the url have to be complete for the endpoint, something like 'https://your.git.ea/api/v1'.  If you enter a URL that doesn't contain the full endpoint, it will be added automatically though.  Also, the alias add will validate the server connection by making a call to 'https://your.git.ea/api/v1/version', so it will need to be accessible when you add an alias.
 
  !gitea alias[a]
  !gitea alias add[a] <alias> <url>
