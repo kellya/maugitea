@@ -239,20 +239,16 @@ class GiteaBot(Plugin):
         if self.db.has_server_alias(evt.sender, alias):
             await evt.reply("Server alias already in use.")
             return
+        if not url.startswith("http"):
+            await evt.reply("Server URL must contain scheme (http/https)")
+            return
+        # Message that will be used if the api endpoint isn't included
         add_message = None
-        if not "/api" in url and self.config["api_endpoint"]:
-            url = url + self.config["api_endpoint"]
-            add_message = (
-                "Note the string '/api' wasn't found in your url "
-                "but is required for operation.  It has been appended "
-                "using the default set in the config file"
-            )
-        elif not "/api" in url and not self.config["api_endpoint"]:
+        if not "/api" in url:
             url = url + "/api/v1"
             add_message = (
                 "Note the string '/api' wasn't found in your url "
-                "but is required for operation.  There is also no server "
-                "default set, so '/api/v1' has been appended"
+                "but is required for operation. '/api/v1' has been appended"
             )
         self.db.add_server_alias(evt.sender, url, alias)
         message = f"Added alias {alias} to server {url}"
