@@ -250,10 +250,22 @@ class GiteaBot(Plugin):
                 "Note the string '/api' wasn't found in your url "
                 "but is required for operation. '/api/v1' has been appended"
             )
-        self.db.add_server_alias(evt.sender, url, alias)
-        message = f"Added alias {alias} to server {url}"
-        if add_message:
-            message += f"\n\n{add_message}"
+        try:
+            resp = await self.http.get(URL(f"{url}/version"))
+            if resp.status == 200:
+                version_json = await resp.json()
+                self.db.add_server_alias(evt.sender, url, alias)
+                message = (
+                    f"Added alias {alias} to server {url} "
+                    f"(running Gitea version {version_json['version']}) "
+                )
+                if add_message:
+                    message += f"\n\n{add_message}"
+        except Exception as Error:
+            if add_message:
+                message = f"Error connecting to {url}"
+                message += f"\n\n{add_message}"
+
         await evt.reply(message)
 
     @alias.subcommand(
