@@ -251,13 +251,13 @@ class GiteaBot(Plugin):
                 "but is required for operation. '/api/v1' has been appended"
             )
         try:
-            resp = await self.http.get(URL(f"{url}/version"))
+            resp = await self.http.get(URL(f"{url}/nodeinfo"))
             if resp.status == 200:
                 version_json = await resp.json()
                 self.db.add_server_alias(evt.sender, url, alias)
                 message = (
                     f"Added alias {alias} to server {url} "
-                    f"(running Gitea version {version_json['version']}) "
+                    f"(running {version_json['software']['name']} version {version_json['software']['version']}) "
                 )
                 if add_message:
                     message += f"\n\n{add_message}"
