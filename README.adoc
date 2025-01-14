@@ -8,10 +8,16 @@ Matrix room: #maugitea:saces.de
 
 === Install & Run
 
+==== Requirements
+
+`pip install urllib3 certifi six`
+
+==== Install
+
 maugitea: just a regular plugin, zip it and upload it.
 
 If you have maubot installed, you can create the mbp package with:
-`mbc build`
+`mbc build` + `mbc upload`
 
 === Webhooks
 
